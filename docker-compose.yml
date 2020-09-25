@@ -1,0 +1,44 @@
+version: '3.3'
+
+volumes:
+  init-db:
+  data-db:
+
+services:
+  mongodb:
+    image: mongo:4.4.1
+    restart: always
+    container_name: mongodb
+    volumes:
+      # - ./init-db:/docker-entrypoint-initdb.d
+      - ./data-db:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongoadmin
+      MONGO_INITDB_DATABASE: athena_labeling
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: mongoadmin
+      ME_CONFIG_MONGODB_SERVER: mongodb
+    depends_on:
+      - mongodb
+
+  redis:
+    image: redis:alpine
+    command: redis-server
+    container_name: labeling-redis
+    restart: unless-stopped
+
+  flower:  
+    image: mher/flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - FLOWER_PORT=8888
+    ports:  
+      - 8888:8888

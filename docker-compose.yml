@@ -35,6 +35,26 @@ services:
     container_name: labeling-redis
     restart: unless-stopped
 
+  fastapi:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+      - redis
+    volumes:
+      - "./:/app"
+    command: "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+
+  worker:
+    build: .
+    depends_on:
+      - mongodb
+      - redis
+    volumes:
+      - "./:/app"
+    command: "celery worker -A worker.celery_worker -l info -Q test-queue -c 1"
+
   flower:  
     image: mher/flower
     environment:
